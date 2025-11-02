@@ -59,6 +59,23 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/user/car")
+    public ResponseEntity<?> updateUserCarModel(@RequestBody Map<String, String> payload) {
+        String username = payload.get("username");
+        String carModel = payload.get("carModel");
+
+        if (username == null || carModel == null) {
+            return ResponseEntity.badRequest().body("Username and carModel are required.");
+        }
+
+        try {
+            userService.updateUserCarModel(username, carModel);
+            return ResponseEntity.ok().body("User car model updated successfully.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
+    }
+
     /**
      * 测试接口
      */

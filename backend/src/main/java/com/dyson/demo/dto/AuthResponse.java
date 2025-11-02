@@ -24,6 +24,7 @@ public class AuthResponse {
         private String id;  // 改为 String 类型（格式: CS + 5位数字）
         private String username;
         private String email;
+        private String carModel;
     }
 }
 

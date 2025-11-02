@@ -33,3 +33,10 @@ export const testConnection = () => {
   return api.get('/auth/test')
 }
 
+export const updateUserCarModel = (username, carModel) => {
+  return axios.put('http://localhost:8080/api/auth/user/car', {
+    username,
+    carModel
+  });
+};
+

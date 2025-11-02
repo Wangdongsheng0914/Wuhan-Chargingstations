@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class User {
     @Id
     @Column(length = 10)
-    private String id;  // 格式: CS + 5位随机数字 (例如: CS12345)
+    private String id;
 
     @Column(nullable = false, unique = true, length = 50)
     private String username;
@@ -37,7 +37,7 @@ public class User {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -45,7 +45,7 @@ public class UserService {
 
         // 创建新用户
         User user = new User();
-        user.setId(userId);  // 设置生成的 ID
+        user.setId(userId); // ID将由数据库自动生成，不再需要手动设置
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));  // BCrypt 加密密码
         user.setEmail(request.getEmail());
@@ -57,7 +57,8 @@ public class UserService {
         AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo(
                 savedUser.getId(),
                 savedUser.getUsername(),
-                savedUser.getEmail()
+                savedUser.getEmail(),
+                savedUser.getCarModel()
         );
 
         return new AuthResponse(true, "注册成功", userInfo);
@@ -85,10 +86,18 @@ public class UserService {
         AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo(
                 user.getId(),
                 user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.getCarModel()
         );
 
         return new AuthResponse(true, "登录成功", userInfo);
+    }
+
+    public void updateUserCarModel(String username, String carModel) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+        user.setCarModel(carModel);
+        userRepository.save(user);
     }
 }
 
