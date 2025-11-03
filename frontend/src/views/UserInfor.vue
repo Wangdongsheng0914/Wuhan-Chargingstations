@@ -6,7 +6,7 @@
         <div class="username">{{ user && user.username ? user.username : '' }}</div>
       </div>
       <div class="userinfo-list">
-        <div class="userinfo-item settings"><i class="iconfont icon-setting"></i> 账号设置 <span class="ui-arrow">&gt;</span></div>
+        <div class="userinfo-item settings" @click="isAccountSettingsVisible = true"><i class="iconfont icon-setting"></i> 账号设置 <span class="ui-arrow">&gt;</span></div>
         <div class="userinfo-item records"><i class="iconfont icon-record"></i> 充电记录 <span class="ui-arrow">&gt;</span></div>
         <div class="userinfo-item logout" @click="logout"><i class="iconfont icon-logout"></i> 退出登录</div>
       </div>
@@ -34,6 +34,22 @@
             <span class="fav-meta">上海市黄浦区西藏中路2号</span>
           </div>
           <div class="fav-item">
+            <span class="fav-title">超级充电站·人民广场</span>
+            <span class="fav-meta">上海市黄浦区西藏中路2号</span>
+          </div><div class="fav-item">
+            <span class="fav-title">超级充电站·人民广场</span>
+            <span class="fav-meta">上海市黄浦区西藏中路2号</span>
+          </div><div class="fav-item">
+            <span class="fav-title">超级充电站·人民广场</span>
+            <span class="fav-meta">上海市黄浦区西藏中路2号</span>
+          </div><div class="fav-item">
+            <span class="fav-title">超级充电站·人民广场</span>
+            <span class="fav-meta">上海市黄浦区西藏中路2号</span>
+          </div><div class="fav-item">
+            <span class="fav-title">超级充电站·人民广场</span>
+            <span class="fav-meta">上海市黄浦区西藏中路2号</span>
+          </div>
+          <div class="fav-item">
             <span class="fav-title">小桔快充·中山北路</span>
             <span class="fav-meta">上海市静安区中山北路1018号</span>
           </div>
@@ -45,24 +61,34 @@
       @close="isModalVisible = false"
       @car-selected="handleCarSelection" 
     />
+    <AccountSettingsModal 
+      v-if="isAccountSettingsVisible" 
+      :visible="isAccountSettingsVisible"
+      :user="user"
+      @close="isAccountSettingsVisible = false"
+      @username-updated="handleUsernameUpdated"
+    />
   </div>
 </template>
 
 <script>
 import CarSelectionModal from '../components/CarSelectionModal.vue';
+import AccountSettingsModal from '../components/AccountSettingsModal.vue';
 import { updateUserCarModel } from '../api/auth.js';
 import axios from 'axios';
 
 export default {
   name: 'UserInfor',
   components: {
-    CarSelectionModal
+    CarSelectionModal,
+    AccountSettingsModal
   },
   data() {
     return {
       user: null,
       avatarUrl: '',
       isModalVisible: false,
+      isAccountSettingsVisible: false,
       selectedCarModel: '暂无车辆',
       carImageUrl: new URL('../image/default.png', import.meta.url).href
     }
@@ -113,6 +139,11 @@ export default {
         console.error("获取车辆图片失败:", error);
         this.carImageUrl = new URL('../image/仰望U9.png', import.meta.url).href;
       }
+    },
+    handleUsernameUpdated(newUsername) {
+      this.user.username = newUsername;
+      // 更新页面显示的用户名
+      this.$forceUpdate();
     }
   }
 }
@@ -216,14 +247,13 @@ export default {
 
 .userinfo-item {
   width: 100%;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 550;
   color: #495057;
   padding: 15px 20px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   display: flex;
-  align-items: center;
   gap: 12px;
   border-radius: 10px;
   border: none;
@@ -252,7 +282,7 @@ export default {
 }
 
 .userinfo-item.logout {
-  margin-top: 15px;
+  justify-content: center;
   color: #dc3545;
 }
 .userinfo-item.logout:hover {
@@ -322,7 +352,7 @@ export default {
   border: none;
   padding: 12px 25px;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600; /* Bold text */
   cursor: pointer;
   transition: all 0.2s ease;
@@ -355,7 +385,7 @@ export default {
 }
 
 .car-model {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: #343a40;
   text-align: center;
@@ -363,8 +393,9 @@ export default {
 
 /* --- 5. Favorites List --- */
 .fav-list {
-  display: grid; /* Use grid for a neat layout */
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 20px;
 }
 
@@ -372,11 +403,14 @@ export default {
   background: rgba(255, 255, 255, 0.6); /* Frosted Glass */
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px); /* For Safari */
-  padding: 18px 22px;
+  padding: 18px 20px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .fav-item:hover {
@@ -387,13 +421,13 @@ export default {
 }
 
 .fav-title {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 600;
   color: #343a40;
 }
 
 .fav-meta {
-  font-size: 14px;
+  font-size: 16px;
   color: #6c757d;
   margin-top: 5px;
 }

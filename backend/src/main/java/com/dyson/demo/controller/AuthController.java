@@ -76,6 +76,42 @@ public class AuthController {
         }
     }
 
+    @PutMapping("/user/username")
+    public ResponseEntity<?> updateUsername(@RequestBody Map<String, String> payload) {
+        String oldUsername = payload.get("oldUsername");
+        String newUsername = payload.get("newUsername");
+        String password = payload.get("password");
+
+        if (oldUsername == null || newUsername == null || password == null) {
+            return ResponseEntity.badRequest().body("oldUsername, newUsername and password are required.");
+        }
+
+        try {
+            userService.updateUsername(oldUsername, newUsername, password);
+            return ResponseEntity.ok().body("Username updated successfully.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/user/password")
+    public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> payload) {
+        String username = payload.get("username");
+        String oldPassword = payload.get("oldPassword");
+        String newPassword = payload.get("newPassword");
+
+        if (username == null || oldPassword == null || newPassword == null) {
+            return ResponseEntity.badRequest().body("username, oldPassword and newPassword are required.");
+        }
+
+        try {
+            userService.updatePassword(username, oldPassword, newPassword);
+            return ResponseEntity.ok().body("Password updated successfully.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+    }
+
     /**
      * 测试接口
      */

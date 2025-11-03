@@ -40,3 +40,21 @@ export const updateUserCarModel = (username, carModel) => {
   });
 };
 
+// 更新用户名
+export const updateUsername = (oldUsername, newUsername, password) => {
+  return api.put('/auth/user/username', {
+    oldUsername,
+    newUsername,
+    password
+  });
+};
+
+// 更新密码
+export const updatePassword = (username, oldPassword, newPassword) => {
+  return api.put('/auth/user/password', {
+    username,
+    oldPassword,
+    newPassword
+  });
+};
+

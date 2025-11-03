@@ -99,5 +99,46 @@ public class UserService {
         user.setCarModel(carModel);
         userRepository.save(user);
     }
+
+    /**
+     * 更新用户名
+     */
+    public void updateUsername(String oldUsername, String newUsername, String password) {
+        // 查找用户
+        User user = userRepository.findByUsername(oldUsername)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        // 验证密码
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("密码错误");
+        }
+
+        // 检查新用户名是否已存在
+        if (userRepository.existsByUsername(newUsername)) {
+            throw new RuntimeException("用户名已存在");
+        }
+
+        // 更新用户名
+        user.setUsername(newUsername);
+        userRepository.save(user);
+    }
+
+    /**
+     * 更新密码
+     */
+    public void updatePassword(String username, String oldPassword, String newPassword) {
+        // 查找用户
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        // 验证旧密码
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("原密码错误");
+        }
+
+        // 更新密码
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
 }
 

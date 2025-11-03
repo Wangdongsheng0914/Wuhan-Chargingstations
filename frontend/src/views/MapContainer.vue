@@ -306,7 +306,7 @@ export default {
 .map-controls {
   position: absolute;
   right: 20px;
-  bottom: 80px;
+  bottom: 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
