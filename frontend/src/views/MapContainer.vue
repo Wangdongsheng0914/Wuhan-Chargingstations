@@ -1,14 +1,14 @@
 <template>
   <div class="navbar-trapezoid">
     <div class="navbar-btn-group">
-      <button class="nav-btn">充电推荐</button>
+      <button class="nav-btn" @click="showRecommendationTypeModal">充电推荐</button>
       <button class="nav-btn">途中充电</button>
       <button class="nav-btn">充电管理</button>
       <button class="nav-btn">AI助手</button>
       <button class="nav-btn" @click="$router.push('/userinfor')">个人信息</button>
     </div>
   </div>
-  <div class="map-container">
+  <div class="map-container" :class="{ 'sidebar-open': sidebarOpen }">
     <!-- 百度地图容器 -->
     <div id="baiduMap" class="baidu-map"></div>
 
@@ -39,17 +39,54 @@
       <p>地图加载中...</p>
     </div>
   </div>
+
+  <!-- 推荐类型选择模态框 -->
+  <RecommendationTypeModal 
+    v-if="showTypeModal"
+    @close="showTypeModal = false"
+    @type-selected="handleRecommendationTypeSelected"
+  />
+
+  <!-- 推荐结果侧边栏 -->
+  <RecommendationSidebar
+    :is-open="sidebarOpen"
+    :user-location="userLocationForAPI"
+    @close="closeSidebar"
+    @stations-loaded="handleStationsLoaded"
+    @station-selected="handleStationSelected"
+  />
 </template>
 
 <script>
+import RecommendationTypeModal from '../components/RecommendationTypeModal.vue'
+import RecommendationSidebar from '../components/RecommendationSidebar.vue'
+
 export default {
   name: 'MapContainer',
+  components: {
+    RecommendationTypeModal,
+    RecommendationSidebar
+  },
   data() {
     return {
       user: null,
       map: null,
       mapLoaded: false,
-      currentLocation: null  // 保存当前位置
+      currentLocation: null,  // 保存当前位置（百度地图Point对象）
+      showTypeModal: false,
+      sidebarOpen: false,
+      stationMarkers: [],  // 保存充电站标记
+      recommendedStations: []  // 保存推荐的充电站列表
+    }
+  },
+  computed: {
+    // 将百度坐标转换为API需要的格式
+    userLocationForAPI() {
+      if (!this.currentLocation) return null
+      return {
+        lat: this.currentLocation.lat,
+        lng: this.currentLocation.lng
+      }
     }
   },
   mounted() {
@@ -78,11 +115,14 @@ export default {
       // 创建script标签异步加载
       const script = document.createElement('script')
       script.type = 'text/javascript'
+      // 加载包含路径规划服务的完整API
       script.src = 'https://api.map.baidu.com/api?v=3.0&ak=1pqRR7L9bsfPDSvESGJtLhtzLk45cFhX&callback=initBaiduMap'
       script.async = true
       
       // 设置全局回调函数
       window.initBaiduMap = () => {
+        // 将地图实例保存到全局，供路径规划工具使用
+        window.map = null // 稍后在initMap中设置
         this.initMap()
       }
       
@@ -99,6 +139,9 @@ export default {
       try {
         // 创建地图实例
         this.map = new BMap.Map('baiduMap')
+        
+        // 将地图实例保存到全局，供路径规划工具使用
+        window.map = this.map
         
         // 设置默认中心点（中国中心位置）
         const defaultPoint = new BMap.Point(104.195, 35.861)
@@ -211,6 +254,139 @@ export default {
           })
         }
       }
+    },
+
+    // 显示推荐类型选择模态框
+    showRecommendationTypeModal() {
+      if (!this.currentLocation) {
+        alert('请等待定位完成后再使用推荐功能')
+        return
+      }
+      this.showTypeModal = true
+    },
+
+    // 处理推荐类型选择
+    handleRecommendationTypeSelected(type) {
+      this.showTypeModal = false
+      if (type === 'normal') {
+        this.sidebarOpen = true
+        // 侧边栏会自动加载推荐数据
+      }
+    },
+
+    // 关闭侧边栏
+    closeSidebar() {
+      this.sidebarOpen = false
+      this.clearStationMarkers()
+    },
+
+    // 处理充电站加载完成
+    handleStationsLoaded(stations) {
+      this.recommendedStations = stations
+      this.displayStationsOnMap(stations)
+    },
+
+    // 在地图上显示充电站标记
+    displayStationsOnMap(stations) {
+      if (!this.map || !stations || stations.length === 0) return
+
+      // 清除之前的标记
+      this.clearStationMarkers()
+
+      // 为每个充电站创建标记
+      stations.forEach((station, index) => {
+        const point = new BMap.Point(station.lng, station.lat)
+        
+        // 创建自定义图标
+        const icon = new BMap.Icon(
+          this.createStationIcon(station, index),
+          new BMap.Size(32, 32),
+          { anchor: new BMap.Size(16, 32) }
+        )
+
+        const marker = new BMap.Marker(point, { icon: icon })
+        
+        // 添加信息窗口
+        const infoWindow = new BMap.InfoWindow(
+          `<div style="padding: 10px; min-width: 200px;">
+            <h4 style="margin: 0 0 8px 0; color: #333;">${station.name}</h4>
+            <p style="margin: 4px 0; color: #666; font-size: 12px;">地址：${station.address || '未知'}</p>
+            <p style="margin: 4px 0; color: #666; font-size: 12px;">距离：${this.formatDistance(station.distance)}</p>
+            <p style="margin: 4px 0; color: #666; font-size: 12px;">功率：${station.maxPowerKw ? station.maxPowerKw + 'kW' : '未知'}</p>
+            <p style="margin: 4px 0; color: #666; font-size: 12px;">可用：${station.availableConnectors || 0}/${station.totalConnectors || 0}</p>
+          </div>`,
+          { width: 250, height: 200, title: station.name }
+        )
+
+        marker.addEventListener('click', () => {
+          this.map.openInfoWindow(infoWindow, point)
+        })
+
+        this.map.addOverlay(marker)
+        this.stationMarkers.push(marker)
+      })
+
+      // 如果有充电站，调整地图视野以包含所有标记
+      if (stations.length > 0) {
+        this.adjustMapView(stations)
+      }
+    },
+
+    // 创建充电站图标（SVG）
+    createStationIcon(station, index) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="14" fill="#43CB83" stroke="white" stroke-width="2"/>
+        <text x="16" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${index + 1}</text>
+      </svg>`
+      const encoded = encodeURIComponent(svg)
+      return 'data:image/svg+xml;charset=utf-8,' + encoded
+    },
+
+    // 调整地图视野以包含所有充电站
+    adjustMapView(stations) {
+      if (!this.map || stations.length === 0) return
+
+      const points = stations.map(s => new BMap.Point(s.lng, s.lat))
+      
+      // 如果只有当前位置，添加当前位置到视野计算
+      if (this.currentLocation) {
+        points.push(this.currentLocation)
+      }
+
+      // 计算包含所有点的最佳视野
+      const viewport = this.map.getViewport(points, {
+        padding: { top: 50, right: 50, bottom: 50, left: 470 } // 左侧留出侧边栏空间（420px侧边栏 + 50px边距）
+      })
+
+      this.map.setViewport(viewport)
+    },
+
+    // 清除所有充电站标记
+    clearStationMarkers() {
+      if (!this.map) return
+      
+      this.stationMarkers.forEach(marker => {
+        this.map.removeOverlay(marker)
+      })
+      this.stationMarkers = []
+    },
+
+    // 处理充电站选择
+    handleStationSelected(station) {
+      if (!this.map) return
+
+      const point = new BMap.Point(station.lng, station.lat)
+      this.map.panTo(point)
+      this.map.setZoom(16)
+    },
+
+    // 格式化距离显示
+    formatDistance(distance) {
+      if (distance === null || distance === undefined) return '未知'
+      if (distance < 1) {
+        return (distance * 1000).toFixed(0) + 'm'
+      }
+      return distance.toFixed(2) + 'km'
     }
   },
   beforeUnmount() {
@@ -251,6 +427,15 @@ export default {
   overflow: hidden;
 }
 
+.map-container {
+  transition: margin-left 0.3s ease;
+}
+
+.map-container.sidebar-open .baidu-map {
+  margin-left: 420px;
+  width: calc(100% - 420px);
+}
+
 .baidu-map {
   position: absolute;
   top: 0;
@@ -259,6 +444,7 @@ export default {
   bottom: 0;
   width: 100%;
   height: 100vh;
+  transition: width 0.3s ease, margin-left 0.3s ease;
 }
 
 .loading-overlay {
